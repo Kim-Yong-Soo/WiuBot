@@ -3,7 +3,17 @@ const scriptName = "Main.js";
 var sdcard = android.os.Environment.getExternalStorageDirectory().getAbsolutePath();
 
 var d = new Date();
+var year = d.getFullYear();
+var dday = d.getDay();
 var month = (d.getMonth() + 1);
+
+function dayNum() {
+  if (dday == 0 || dday == 6) {
+    return 0;
+  } else {
+    return dday - 1;
+  }
+}
 
 function saveTalk(talkRoom, talkSender, talkMsg) {
   talkSender = talkSender.trim();
@@ -124,8 +134,55 @@ function checkFuck(talkSender, talkMsg, replier) {
   }
 }
 
+function setSchedule(talkRoom, talkMsg) {
+  var file = sdcard + "/WiuBot/schedule/" + talkRoom + ".txt";
+  if (!(java.io.File(file).isFile())) FileStream.append(file, "");
+  FileStream.append(file, talkMsg + "\n");
+}
+
+function getSchedule(talkRoom, date) {
+  var file = sdcard + "/WiuBot/schedule/" + talkRoom + ".txt";
+  if (!(java.io.File(file).isFile())) FileStream.append(file, "");
+
+  var val1 = (FileStream.read(file)).split("\n");
+  var val2 = [];
+
+  for (var n = 0; n < val1.length; n++) {
+    val2[n] = val1[n].split(" ");
+  }
+
+  return val2[date].join("\n");
+}
+
+function checkSchedule(talkRoom, date) {
+  var file = sdcard + "/WiuBot/scheduleChange/" + talkRoom + "/" + year + "/" + month + ".txt";
+  if (!(java.io.File(file).isFile())) FileStream.append(file, "");
+  var val1 = (FileStream.read(file)).split("\n");
+  for (var i = 0; i < val1.length; i++) {
+    if (val1[i].split(" : ")[0] == date) {
+      return val1[i].split(" : ")[1].split(" ").join("\n");
+    }
+  }
+  return getSchedule(talkRoom, dayNum());
+}
+
+function changeSchedule(talkRoom, date, schedule, replier) {
+  var file = sdcard + "/WiuBot/scheduleChange/" + talkRoom + "/" + date[0] + "/" + date[1] + ".txt";
+  if (!(java.io.File(file).isFile())) FileStream.append(file, "");
+  var val1 = (FileStream.read(file)).split("\n");
+  for (var i = 0; i < val1.length; i++) {
+    if (val1[i].split(" : ")[0] == date[2]) {
+      replier.reply("이미 변경사항이 존재하는 날입니다.");
+      return;
+    }
+  }
+  FileStream.append(file, date[2] + " : " + schedule + "\n");
+}
+
 var folder = new java.io.File(sdcard + "/WiuBot/talk/");
 folder.mkdirs();
+var day = (d.getDate() + 1);
+
 
 
 function response(room, msg, sender, isGroupChat, replier, imageDB) {
@@ -169,6 +226,22 @@ function response(room, msg, sender, isGroupChat, replier, imageDB) {
       case "비속추":
       case "비속어추가":
         writeFuck(sender, command[2], replier);
+        break;
+      case "시변":
+        changeSchedule(command[2], command[3].split("."), command[4] + " " + command[5] + " " + command[6] + " " + command[7] + " " + command[8] + " " + command[9] + " " + command[10], replier);
+        break;
+      case "시추":
+        setSchedule(command[2], command[3] + " " + command[4] + " " + command[5] + " " + command[6] + " " + command[7] + " " + command[8] + " " + command[9]);
+        break;
+      case "시간표":
+        if (dday == 0) {
+          replier.reply(checkSchedule(command[2], day));
+        } else if (dday == 6) {
+          replier.reply(checkSchedule(command[2], day + 1));
+        } else {
+          replier.reply(checkSchedule(command[2], day - 1));
+
+        }
         break;
       default:
     }
