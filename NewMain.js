@@ -52,12 +52,14 @@ function readData(talkRoom, talkSender) {
   return value;
 }
 
+var url = "http://search.naver.com/search.naver?sm=tab_hty.top&where=nexearch&query=";
+
 function getCafe(days, school) {
   var day = (d.getDate() + days);
   var pap = (month + "월 " + day + "일 ");
   var cafeArray = ["조식", "중식", "석식"];
   var cafeVal = "";
-  var util = Utils.getWebText("http://search.naver.com/search.naver?sm=tab_hty.top&where=nexearch&query=" + school + "급식");
+  var util = Utils.getWebText(url + school + "급식");
 
   for (var n = 0; n < cafeArray.length; n++) {
     try {
@@ -75,7 +77,7 @@ function getCafe(days, school) {
 
 function getWeather(place) {
   place = place.trim();
-  var util = Utils.getWebText("http://search.naver.com/search.naver?sm=tab_hty.top&where=nexearch&query=" + place + "날씨");
+  var util = Utils.getWebText(url + place + "날씨");
   util = util.replace(/<[^>]+>/g, "").split("월간")[1].split("시간별 예보")[0].trim().split("\n");
   var results = [];
   results[0] = util[0];
@@ -83,9 +85,7 @@ function getWeather(place) {
   results[2] = util[4].replace("온도", "온도 : ").trim() + "℃";
   results[3] = util[9].replace("먼지", "먼지 : ").trim();
   results[4] = util[13].replace("습도", "습도 : ").trim() + "%";
-  var result = "[" + place + " 날씨]\n\n" + results.join("\n");
-  return result;
-
+  return results;
 }
 
 function writeFuck(talkSender, talkMsg, replier) {
@@ -102,7 +102,6 @@ function writeFuck(talkSender, talkMsg, replier) {
       return;
     }
   }
-
   FileStream.append(file, talkSender + " : " + talkMsg + "\n");
 }
 
@@ -110,7 +109,6 @@ function checkFuck(talkSender, talkMsg, replier) {
   talkSender = talkSender.trim();
   talkMsg = talkMsg.trim().split(" ");
   var file = sdcard + "/WiuBot/warning/fucks.txt";
-
   if (!(java.io.File(file).isFile())) return "저장된 비속어가 없습니다.";
 
   var val1 = (FileStream.read(file)).split("\n");
@@ -128,7 +126,6 @@ function checkFuck(talkSender, talkMsg, replier) {
       }
     }
   }
-
   if (check) {
     replier.reply("※ 비속어 ※\n" + val3.join(", ") + "이/가 발견되었습니다.");
   }
@@ -160,10 +157,10 @@ function checkSchedule(talkRoom, date) {
   var val1 = (FileStream.read(file)).split("\n");
   for (var i = 0; i < val1.length; i++) {
     if (val1[i].split(" : ")[0] == date) {
-      return val1[i].split(" : ")[1].split(" ").join("\n");
-    }
+    return val1[i].split(" : ")[1].split(" ").join("\n");
   }
-  return getSchedule(talkRoom, dayNum());
+}
+return getSchedule(talkRoom, dayNum());
 }
 
 function changeSchedule(talkRoom, date, schedule, replier) {
@@ -177,6 +174,21 @@ function changeSchedule(talkRoom, date, schedule, replier) {
     }
   }
   FileStream.append(file, date[2] + " : " + schedule + "\n");
+}
+
+function ddayLists(today, date, place, talkRoom) {
+  var schedule = checkSchedule(talkRoom, date).split("\n");
+  var res1 = today + "은 " + date + "일이며 현재 " + place + "의 기온은 " + getWeather(place)[1].replace("현재온도 : ", "") + "이며, 체감온도는 " + getWeather(place)[2].replace("체감온도 : ", "") + "입니다.\n";
+  var res2 = today + "의 시간표는 \n1." + schedule[0] + "\n2." + schedule[1] + "\n3." + schedule[2] + "\n4." + schedule[3] + "\n5." + schedule[4] + "\n6." + schedule[5] + "\n7." + schedule[6] + "\n입니다.";
+  var res3 = "";
+  for (var i = 0; i < schedule.length; i++) {
+    if (schedule[i] == "체육") {
+      res3 = "\n" + today + "은 체육이 있으니 체육복을 챙기시기 바랍니다.";
+      break;
+    }
+  }
+
+  return res1 + res2 + res3;
 }
 
 var folder = new java.io.File(sdcard + "/WiuBot/talk/");
@@ -199,7 +211,9 @@ function response(room, msg, sender, isGroupChat, replier, imageDB) {
   msg = msg.trim();
   var command = msg.split(" ");
 
-  checkFuck(sender, msg, replier);
+  if (room == "게임방") {
+    checkFuck(sender, msg, replier);
+  }
 
   if ((msg.indexOf("wiu") == 0) || (msg.indexOf("Wiu") == 0)) {
     switch (command[1]) {
@@ -233,6 +247,9 @@ function response(room, msg, sender, isGroupChat, replier, imageDB) {
       case "시추":
         setSchedule(command[2], command[3] + " " + command[4] + " " + command[5] + " " + command[6] + " " + command[7] + " " + command[8] + " " + command[9]);
         break;
+      case "날씨":
+        replier.reply("[" + command[2] + " 날씨]\n\n" + getWeather(command[2]).join("\n"));
+        break;
       case "시간표":
         if (dday == 0) {
           replier.reply(checkSchedule(command[2], day));
@@ -240,20 +257,29 @@ function response(room, msg, sender, isGroupChat, replier, imageDB) {
           replier.reply(checkSchedule(command[2], day + 1));
         } else {
           replier.reply(checkSchedule(command[2], day - 1));
-
+        }
+        break;
+      case "report":
+      case "리포트":
+        if (room == "2-6" || room == "이상한 방" || room == "김용수") {
+          if (dday == 0 || dday == 6) {
+            replier.reply("주말에는 지원되지 않습니다.");
+            break;
+          }
+          replier.reply(ddayLists("오늘", day - 1, "대천", "2-6"));
+        }
+        break;
+      case "내일리포트":
+        if (room == "2-6" || room == "이상한방" || room == "김용수") {
+          if (dday == 5 || dday == 6) {
+            replier.reply("주말에는 지원되지 않습니다.");
+            break;
+          }
+          replier.reply(ddayLists("내일", day, "대천", "2-6"));
         }
         break;
       default:
     }
-  } else if (room == "반톡[쌤없음]" || room == "이상한 방") {
-    if (msg == "내일 급식 뭐지") {
-      replier.reply("[급식]\n" + "\u200b".repeat(500) + getCafe(1) + "\n다른 명령어가 궁금하다면? - wiu help -");
-    } else if (msg == "오늘 급식 뭐지") {
-      replier.reply("[급식]\n" + "\u200b".repeat(500) + getCafe(0) + "\n다른 명령어가 궁금하다면? - wiu help -");
-    }
-  } else if (room == "Sydney Avengers" && sender == "Sydney English") {
-    replier.reply("시험이 잘못했어요");
   }
-
   saveTalk(room, sender, msg);
 }
