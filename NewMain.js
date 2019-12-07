@@ -62,6 +62,7 @@ function getCafe(days) {
   }
   return cafeVal;
 }
+
 var folder = new java.io.File(sdcard + "/WiuBot/talk/");
 folder.mkdirs();
 
