@@ -305,7 +305,7 @@ function response(room, msg, sender, isGroupChat, replier, imageDB) {
         var com5 = "[시간표]\n시간표: 오늘의 시간표를 확인합니다. 주말인 경우에는 다음 월요일 시간표를 확인합니다\n시추: 시간표를 추가합니다.\n     초기에 월요일~금요일의 시간표를 차례대로 지정해야만 시간표 관련 명령어 사용 가능합니다.\n시변: 변경된 시간표를 추가시킵니다.\n     예) wiu 시변 독서1 독서2 영어1 영어2 수학 선택1 선택2\n\n";
         var com6 = "[리포트]\n리포트, report: 오늘의 리포트입니다.\n내일리포트: 내일의 리포트입니다\n\n";
         var com7 = "[비속어]\n비속추, 비속어추가: 주의를 줄 비속어를 추가합니다.\n\n(추후 더욱 많은 명령어 추가 예정)";
-        replier.reply(com1 + com2 + com3 + com4 + com5 + com6 + com7);
+        replier.reply("[명령어]" + firstStr + com1 + com2 + com3 + com4 + com5 + com6 + com7);
         break;
         //
       case "비속추":
