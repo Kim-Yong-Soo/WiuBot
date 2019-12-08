@@ -266,8 +266,9 @@ function response(room, msg, sender, isGroupChat, replier, imageDB) {
       case "날씨":
         if (command.length >= 3) {
           replier.reply("[" + command[2] + " 날씨]\n\n" + getWeather(command[2]).join("\n"));
+        } else {
+          replier.reply("[" + place + " 날씨]\n\n" + getWeather(place).join("\n"));
         }
-        replier.reply("[" + place + " 날씨]\n\n" + getWeather(place).join("\n"));
         break;
       case "시간표":
         if (dday == 0) {
