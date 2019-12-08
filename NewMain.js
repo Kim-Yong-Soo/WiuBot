@@ -75,6 +75,7 @@ function getCafe(days, school) {
   return cafeVal;
 }
 
+
 function getWeather(place) {
   place = place.trim();
   var util = Utils.getWebText(url + place + "날씨");
@@ -157,10 +158,17 @@ function checkSchedule(talkRoom, date) {
   var val1 = (FileStream.read(file)).split("\n");
   for (var i = 0; i < val1.length; i++) {
     if (val1[i].split(" : ")[0] == date) {
-    return val1[i].split(" : ")[1].split(" ").join("\n");
+      return val1[i].split(" : ")[1].split(" ").join("\n");
+    }
   }
+  return getSchedule(talkRoom, dayNum());
 }
-return getSchedule(talkRoom, dayNum());
+
+function checkAllSceCh(talkRoom) {
+  var file = sdcard + "/WiuBot/scheduleChange/" + talkRoom + "/" + year + "/" + month + ".txt";
+  if (!(java.io.File(file).isFile())) FileStream.append(file, "");
+  var val1 = (FileStream.read(file)).split("\n");
+  return val1.join("\n");
 }
 
 function changeSchedule(talkRoom, date, schedule, replier) {
@@ -176,19 +184,24 @@ function changeSchedule(talkRoom, date, schedule, replier) {
   FileStream.append(file, date[2] + " : " + schedule + "\n");
 }
 
-function ddayLists(today, date, place, talkRoom) {
+function ddayLists(today, date, place, talkRoom, replier) {
   var schedule = checkSchedule(talkRoom, date).split("\n");
-  var res1 = today + "은 " + date + "일이며 현재 " + place + "의 기온은 " + getWeather(place)[1].replace("현재온도 : ", "") + "이며, 체감온도는 " + getWeather(place)[2].replace("체감온도 : ", "") + "입니다.\n";
-  var res2 = today + "의 시간표는 \n1." + schedule[0] + "\n2." + schedule[1] + "\n3." + schedule[2] + "\n4." + schedule[3] + "\n5." + schedule[4] + "\n6." + schedule[5] + "\n7." + schedule[6] + "\n입니다.";
-  var res3 = "";
+  var res1 = "";
+  if (today == "오늘") {
+    res1 = today + "은 " + date + "일이며 현재 " + place + "의 기온은 " + getWeather(place)[1].replace("현재온도 : ", "") + "이며, 체감온도는 " + getWeather(place)[2].replace("체감온도 : ", "") + "입니다.\n";
+  } else {
+    res1 = today + "은 " + date + "일입니다.";
+  }
+  var res2 = "\n" + today + "의 시간표는 \n1." + schedule[0] + "\n2." + schedule[1] + "\n3." + schedule[2] + "\n4." + schedule[3] + "\n5." + schedule[4] + "\n6." + schedule[5] + "\n7." + schedule[6] + "\n입니다.";
+  replier.reply(res1 + res2);
   for (var i = 0; i < schedule.length; i++) {
     if (schedule[i] == "체육") {
-      res3 = "\n" + today + "은 체육이 있으니 체육복을 챙기시기 바랍니다.";
+      replier.reply("\n" + today + "은 체육이 있으니 체육복을 챙기시기 바랍니다.");
       break;
     }
   }
 
-  return res1 + res2 + res3;
+  replier.reply("[급식]\n" + "\u200b".repeat(500) + getCafe(date - (day - 1), place + "고"));
 }
 
 var folder = new java.io.File(sdcard + "/WiuBot/talk/");
@@ -215,7 +228,64 @@ function response(room, msg, sender, isGroupChat, replier, imageDB) {
     checkFuck(sender, msg, replier);
   }
 
-  if ((msg.indexOf("wiu") == 0) || (msg.indexOf("Wiu") == 0)) {
+  if ((room == "2-6") && (msg.indexOf("wiu") == 0) || (msg.indexOf("Wiu") == 0)) {
+    switch (command[1]) {
+      case "내일급식":
+      case "낼급식":
+        replier.reply("[급식]\n" + "\u200b".repeat(500) + getCafe(1, "대천고") + "\n다른 명령어가 궁금하다면? - wiu help -");
+        break;
+      case "오늘급식":
+        replier.reply("[급식]\n" + "\u200b".repeat(500) + getCafe(0, "대천고") + "\n다른 명령어가 궁금하다면? - wiu help -");
+        break;
+      case "급식":
+        replier.reply("[" + command[2] + " 급식]\n\n" + "\u200b".repeat(500) + getCafe(parseInt(command[3]), command[2]) + "\n다른 명령어가 궁금하다면? - wiu help -");
+        break;
+      case "명령어":
+      case "help":
+        replier.reply("[명령어]\n" + "\u200b".repeat(500) + "[Wiu]\n명령어 목록 (2019/12/08 마지막 수정)\n밑의 모든 명령어는 모두 앞에 'wiu' 또는 'Wiu'을 적고 하셔야 합니다!\n명령어, help: 명령어 목록을 확인합니다!\n\n[급식]\n내일급식, 낼급식: 내일 급식을 확인합니다.\n오늘급식: 오늘 급식을 확인합니다.\n급식: '급식 m n'로 m학교의 n일 후 급식을 확인합니다.\n\n[기록]\n내기록: 나의 톡 기록을 확인합니다.\n기록: '기록 user'로 user의 톡 기록을 확인합니다.\n\n[시간표]\n시간표: 오늘의 시간표를 확인합니다. 주말인 경우에는 월요일 시간표를 확인합니다\n리포트: 오늘의 리포트입니다.\n내일리포트: 내일의 리포트입니다\n\n(추후 더욱 많은 명령어 추가 예정)");
+        break;
+      case "내기록":
+        replier.reply("[기록]\n" + "\u200b".repeat(500) + readData(room, sender));
+        break;
+      case "기록":
+        replier.reply("[기록]\n" + "\u200b".repeat(500) + readData(room, command[2]));
+        break;
+      case "날씨":
+        replier.reply("[" + command[2] + " 날씨]\n\n" + getWeather(command[2]).join("\n"));
+        break;
+      case "변경사항확인":
+        if (room == "2-6" || room == "이상한방" || room == "김용수") {
+          replier.reply(checkAllSceCh("2-6"));
+        }
+        break;
+      case "시간표":
+        if (dday == 0) {
+          replier.reply(checkSchedule("2-6", day));
+        } else if (dday == 6) {
+          replier.reply(checkSchedule("2-6", day + 1));
+        } else {
+          replier.reply(checkSchedule("2-6", day - 1));
+        }
+        break;
+      case "report":
+      case "리포트":
+        if (dday == 0 || dday == 6) {
+          replier.reply("주말에는 지원되지 않습니다.");
+          break;
+        }
+        ddayLists("오늘", day - 1, "대천", "2-6", replier);
+        break;
+      case "내일리포트":
+        if (dday == 5 || dday == 6) {
+          replier.reply("주말에는 지원되지 않습니다.");
+          break;
+        }
+        ddayLists("내일", day, "대천", "2-6", replier);
+        break;
+      default:
+    }
+
+  } else if ((msg.indexOf("wiu") == 0) || (msg.indexOf("Wiu") == 0)) {
     switch (command[1]) {
       case "내일급식":
       case "낼급식":
@@ -229,7 +299,7 @@ function response(room, msg, sender, isGroupChat, replier, imageDB) {
         break;
       case "명령어":
       case "help":
-        replier.reply("[명령어]\n" + "\u200b".repeat(500) + "[Wiu]\n명령어 목록 (2019/12/07 마지막 수정)\n밑의 모든 명령어는 모두 앞에 'wiu' 또는 'Wiu'을 적고 하셔야 합니다!\n명령어, help: 명령어 목록을 확인합니다!\n\n[급식]\n내일급식, 낼급식: 내일 급식을 확인합니다.\n오늘급식: 오늘 급식을 확인합니다.\n급식: '급식 m n'로 m학교의 n일 후 급식을 확인합니다.\n\n[기록]\n내기록: 나의 톡 기록을 확인합니다.\n기록: '기록 user'로 user의 톡 기록을 확인합니다.\n\n(추후 더욱 많은 명령어 추가 예정)");
+        replier.reply("[명령어]\n" + "\u200b".repeat(500) + "[Wiu]\n명령어 목록 (2019/12/08 마지막 수정)\n밑의 모든 명령어는 모두 앞에 'wiu' 또는 'Wiu'을 적고 하셔야 합니다!\n명령어, help: 명령어 목록을 확인합니다!\n\n[급식]\n내일급식, 낼급식: 내일 급식을 확인합니다.\n오늘급식: 오늘 급식을 확인합니다.\n급식: '급식 m n'로 m학교의 n일 후 급식을 확인합니다.\n\n[기록]\n내기록: 나의 톡 기록을 확인합니다.\n기록: '기록 user'로 user의 톡 기록을 확인합니다.\n\n[시간표]\n시간표: 오늘의 시간표를 확인합니다. 주말인 경우에는 월요일 시간표를 확인합니다\n리포트: 오늘의 리포트입니다.\n내일리포트: 내일의 리포트입니다\n\n(추후 더욱 많은 명령어 추가 예정)");
         break;
       case "내기록":
         replier.reply("[기록]\n" + "\u200b".repeat(500) + readData(room, sender));
@@ -250,6 +320,11 @@ function response(room, msg, sender, isGroupChat, replier, imageDB) {
       case "날씨":
         replier.reply("[" + command[2] + " 날씨]\n\n" + getWeather(command[2]).join("\n"));
         break;
+      case "변경사항확인":
+        if (room == "2-6" || room == "이상한방" || room == "김용수") {
+          replier.reply(checkAllSceCh("2-6"));
+        }
+        break;
       case "시간표":
         if (dday == 0) {
           replier.reply(checkSchedule(command[2], day));
@@ -261,21 +336,21 @@ function response(room, msg, sender, isGroupChat, replier, imageDB) {
         break;
       case "report":
       case "리포트":
-        if (room == "2-6" || room == "이상한 방" || room == "김용수") {
+        if (room == "이상한방" || room == "김용수") {
           if (dday == 0 || dday == 6) {
             replier.reply("주말에는 지원되지 않습니다.");
             break;
           }
-          replier.reply(ddayLists("오늘", day - 1, "대천", "2-6"));
+          ddayLists("오늘", day - 1, "대천", "2-6", replier);
         }
         break;
       case "내일리포트":
-        if (room == "2-6" || room == "이상한방" || room == "김용수") {
+        if (room == "이상한방" || room == "김용수") {
           if (dday == 5 || dday == 6) {
             replier.reply("주말에는 지원되지 않습니다.");
             break;
           }
-          replier.reply(ddayLists("내일", day, "대천", "2-6"));
+          ddayLists("내일", day, "대천", "2-6", replier);
         }
         break;
       default:
