@@ -14,6 +14,7 @@ function dayNum() {
 
 function saveTalk(tRoom, tSender, tMsg) {
   FileStream.append(path + "/talk/" + tRoom + ".txt", tSender + " : " + tMsg + "\n");
+  return;
 }
 
 function readData(tRoom, tSender) {
@@ -39,7 +40,7 @@ function readData(tRoom, tSender) {
 }
 
 function getCafe(days, school) {
-  day += days;
+  var day = (d.getDate() + days);
   var pap = month + "월 " + day + "일 ";
   var cafeVal = "";
   var util = Utils.getWebText(nsUrl + school + "급식");
@@ -69,56 +70,78 @@ function getWeather(place) {
 function writeFuck(tSender, tMsg, replier) {
   var file = path + "/warning/fucks.txt";
   if (!(java.io.File(file))) FileStream.append(file, "");
-  var fileVal = FileStream.read(file);
+  var fileVal = FileStream.read(file).split("\n");
   var retrVal = [];
 
   for (var n = 0; n < fileVal.length; n++) {
     retrVal[n] = fileVal[n].split(" : ")[1];
-    if (retrVal[n] == talkMsg) {
+    if (retrVal[n] == tMsg) {
       replier.reply("이미 저장된 비속어입니다.");
       return;
     }
   }
-  FileStream.append(file, tSender + " : " + tMsg);
+  FileStream.append(file, tSender + " : " + tMsg + "\n");
+  return;
 }
 
 function checkFuck(tMsg, replier) { // 현재 기능 안됨 (2019.12.12 오전 7시 45분)
   var msg = tMsg.split(" "); //ㅅㅂ놈아, 죽어라
-  if (!(java.io.File("${path}/warning/fucks.txt").isFile())) return "저장된 비속어가 없습니다.";
+  if (!(java.io.File(path + "/warning/fucks.txt").isFile())) return "저장된 비속어가 없습니다.";
   var fileVal = FileStream.read(path + "/warning/fucks.txt").split("\n"); // 김용수 : ㅅㅂ
-  var retrVal = [];
-  var count = 0;
+  var retrVal1 = [];
+  var retrVal2 = [];
+  var check = false;
 
-  for (var n = 0; n < msg.length; n++) { //ㅅㅂ놈아, 죽어라
-    fileVal[n] = fileVal.split(" : ")[1]; //ㅅㅂ, ㅂㅅ, ㄱㅅㄲ
-    for (var m = 0; m < fileVal.length; m++) {
-      retrVal[n][m] = msg[n].match("/" + fileVal[m] + "/gi");
+  for (var n = 0; n < fileVal.length; n++) {
+    retrVal1[n] = fileVal[n].split(" : ")[1];
+    for (var m = 0; m < msg.length; m++) {
+      if (msg[m] == retrVal1[n]) {
+        check = true;
+        retrVal2.push(retrVal1[n]);
+      }
     }
   }
 
-  if (!(retrVal.length)) {
-    replier.reply("※ 비속어 " + retrVal.length + "개 발견※");
+  if (retrVal2.length > 0) {
+    replier.reply("※ 비속어 " + retrVal2.length + "개 발견※");
   }
+  return;
+}
+
+function getFuck() {
+  var file = path + "/warning/fucks.txt";
+  if (!(java.io.File(file))) FileStream.append(file, "");
+  var fileVal = FileStream.read(path + "/warning/fucks.txt").split("\n");
+  var retrVal1 = [];
+  var retrVal2 = [];
+
+  for (var n = 0; n < fileVal.length; n++) {
+    retrVal1[n] = fileVal[n].split(" : ")[1];
+    retrVal2.push(retrVal1[n]);
+  }
+
+  return retrVal2.join("\n");
 }
 
 //여기까지 정리 완료 (2019.12.10 오전 4시 40분);
 
 
 //시간표를 추가한다.
-function setSchedule(talkRoom, talkMsg, replier) {
-  var file = path + "/schedule/" + talkRoom + ".txt";
+function setSchedule(tRoom, tMsg, replier) {
+  var file = path + "/schedule/" + tRoom + ".txt";
   if (!(java.io.File(file).isFile())) FileStream.append(file, "");
   var val1 = (FileStream.read(file)).split("\n");
   if (val1.length > 5) {
     replier.reply("이미 5일의 시간표가 추가되어 있습니다.");
     return;
   }
-  FileStream.append(file, talkMsg + "\n");
+  FileStream.append(file, tMsg + "\n");
+  return;
 }
 
 //시간표를 불러온다.
-function getSchedule(talkRoom, date) {
-  var file = path + "/schedule/" + talkRoom + ".txt";
+function getSchedule(tRoom, date) {
+  var file = path + "/schedule/" + tRoom + ".txt";
   if (!(java.io.File(file).isFile())) FileStream.append(file, "");
 
   var val1 = (FileStream.read(file)).split("\n");
@@ -132,8 +155,8 @@ function getSchedule(talkRoom, date) {
 }
 
 //변경된 시간표를 확인하고 당일에 맞는 시간표를 내보낸다.
-function checkSchedule(talkRoom, date) {
-  var file = path + "/scheduleChange/" + talkRoom + "/" + year + "/" + month + ".txt";
+function checkSchedule(tRoom, date) {
+  var file = path + "/scheduleChange/" + tRoom + "/" + year + "/" + month + ".txt";
   if (!(java.io.File(file).isFile())) FileStream.append(file, "");
   var val1 = (FileStream.read(file)).split("\n");
   for (var i = 0; i < val1.length; i++) {
@@ -141,20 +164,20 @@ function checkSchedule(talkRoom, date) {
       return val1[i].split(" : ")[1].split(" ").join("\n");
     }
   }
-  return getSchedule(talkRoom, dayNum());
+  return getSchedule(tRoom, dayNum());
 }
 
 //변경된 시간표들을 전부 불러온다.
-function checkAllSceCh(talkRoom) {
-  var file = path + "/scheduleChange/" + talkRoom + "/" + year + "/" + month + ".txt";
+function checkAllSceCh(tRoom) {
+  var file = path + "/scheduleChange/" + tRoom + "/" + year + "/" + month + ".txt";
   if (!(java.io.File(file).isFile())) FileStream.append(file, "");
   var val1 = (FileStream.read(file)).split("\n");
   return val1.join("\n");
 }
 
 //시간표를 변경한다.
-function changeSchedule(talkRoom, date, schedule, replier) {
-  var file = path + "/scheduleChange/" + talkRoom + "/" + date[0] + "/" + date[1] + ".txt";
+function changeSchedule(tRoom, date, schedule, replier) {
+  var file = path + "/scheduleChange/" + tRoom + "/" + date[0] + "/" + date[1] + ".txt";
   if (!(java.io.File(file).isFile())) FileStream.append(file, "");
   var val1 = (FileStream.read(file)).split("\n");
   for (var i = 0; i < val1.length; i++) {
@@ -164,11 +187,12 @@ function changeSchedule(talkRoom, date, schedule, replier) {
     }
   }
   FileStream.append(file, date[2] + " : " + schedule + "\n");
+  return;
 }
 
 //리포트 기능이다.
-function ddayLists(today, date, place, talkRoom, replier) {
-  var schedule = checkSchedule(talkRoom, date).split("\n");
+function ddayLists(today, date, place, tRoom, replier) {
+  var schedule = checkSchedule(tRoom, date).split("\n");
   var res1 = "";
   if (today == "오늘") {
     res1 = today + "은 " + date + "일이며 현재 " + place + "의 기온은 " + getWeather(place)[1].replace("현재온도 : ", "") + "이며, 체감온도는 " + getWeather(place)[2].replace("체감온도 : ", "") + "입니다.\n";
@@ -185,6 +209,7 @@ function ddayLists(today, date, place, talkRoom, replier) {
   }
 
   replier.reply("[급식]\n" + "\u200b".repeat(500) + getCafe(date - (day - 1), place + "고"));
+  return;
 }
 
 var folder = new java.io.File(path + "/talk/");
@@ -274,13 +299,16 @@ function response(room, msg, sender, isGroupChat, replier, imageDB) {
         var com4 = "[기록]\n내기록: 나의 톡 기록을 확인합니다.\n기록: '기록 user'로 user의 톡 기록을 확인합니다.\n\n";
         var com5 = "[시간표]\n시간표: 오늘의 시간표를 확인합니다. 주말인 경우에는 다음 월요일 시간표를 확인합니다\n시추: 시간표를 추가합니다.\n     초기에 월요일~금요일의 시간표를 차례대로 지정해야만 시간표 관련 명령어 사용 가능합니다.\n시변: 변경된 시간표를 추가시킵니다.\n     예) wiu 시변 독서1 독서2 영어1 영어2 수학 선택1 선택2\n\n";
         var com6 = "[리포트]\n리포트, report: 오늘의 리포트입니다.\n내일리포트: 내일의 리포트입니다\n\n";
-        var com7 = "[비속어]\n비속추, 비속어추가: 주의를 줄 비속어를 추가합니다.\n\n(추후 더욱 많은 명령어 추가 예정)";
+        var com7 = "[비속어]\n비속추, 비속어추가: 주의를 줄 비속어를 추가합니다.\n비속목: 추가 되어있는 비속어 목록을 확인합니다.\n\n(추후 더욱 많은 명령어 추가 예정)";
         replier.reply("[명령어]" + firstStr + com1 + com2 + com3 + com4 + com5 + com6 + com7);
         break;
         //
       case "비속추":
       case "비속어추가":
         writeFuck(sender, command[2], replier);
+        break;
+      case "비속목":
+        replier.reply("[비속어 목록]" + firstStr + getFuck());
         break;
       case "시변":
         changeSchedule(room, command[2].split("."), command[3] + " " + command[4] + " " + command[5] + " " + command[6] + " " + command[7] + " " + command[8] + " " + command[9], replier);
